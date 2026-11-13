@@ -176,3 +176,64 @@ def analyze_windows_file_types(path: str) -> Tuple[bool, Dict[str, Dict[str, int
 
     return analyze_recursive(path)
 
+
+
+def get_windows_file_attributes_stats(path: str) -> Tuple[bool, Dict[str, int]]:
+    """Подсчёт файлов с атрибутами Windows."""
+
+    visited = set()
+
+    def analyze_recursive(current_path):
+        real_path = os.path.normcase(os.path.realpath(current_path))
+
+        if real_path in visited:
+            return True, {}
+
+        visited.add(real_path)
+
+        success, items = navigation.list_directory(current_path)
+
+        if not success:
+            return False, {}
+
+        stats = {
+            "hidden": 0,
+            "system": 0,
+            "readonly": 0
+        }
+
+        for item in items:
+            full_path = os.path.join(current_path, item["name"])
+
+            if os.path.islink(full_path):
+                continue
+
+            attrs = utils.get_windows_attributes(full_path)
+
+            if attrs == utils.INVALID_FILE_ATTRIBUTES:
+                continue
+
+            if item["type"] == "file":
+                if attrs & utils.FILE_ATTRIBUTE_HIDDEN:
+                    stats["hidden"] += 1
+
+                if attrs & utils.FILE_ATTRIBUTE_SYSTEM:
+                    stats["system"] += 1
+
+                if attrs & utils.FILE_ATTRIBUTE_READONLY:
+                    stats["readonly"] += 1
+
+            elif item["type"] == "dir":
+                sub_success, sub_stats = analyze_recursive(full_path)
+
+                if not sub_success:
+                    return False, {}
+
+                for attribute in stats:
+                    stats[attribute] += sub_stats[attribute]
+
+        return True, stats
+
+    return analyze_recursive(path)
+
+

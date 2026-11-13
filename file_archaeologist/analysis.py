@@ -237,3 +237,50 @@ def get_windows_file_attributes_stats(path: str) -> Tuple[bool, Dict[str, int]]:
     return analyze_recursive(path)
 
 
+
+def show_windows_directory_stats(path: str) -> None:
+    """Вывод общей статистики каталога Windows."""
+
+    files_success, files_count = count_files(path)
+
+    bytes_success, total_bytes = count_bytes(path)
+
+    types_success, file_types = analyze_windows_file_types(path)
+
+    attrs_success, attributes = get_windows_file_attributes_stats(path)
+
+    if not all([
+        files_success,
+        bytes_success,
+        types_success,
+        attrs_success
+    ]):
+        print("Ошибка: не удалось получить статистику каталога.")
+        return
+
+    print("\n СТАТИСТИКА КАТАЛОГА ")
+    print(f"Путь: {path}")
+
+    print(f"\nКоличество файлов: {files_count}")
+    print(f"Общий размер: {utils.format_size(total_bytes)}")
+
+    print("\nТипы файлов:")
+
+    if not file_types:
+        print("Файлы не найдены.")
+    else:
+        for extension, data in sorted(file_types.items()):
+            print(
+                f"{extension}: "
+                f"{data['count']} файлов, "
+                f"{utils.format_size(data['size'])}"
+            )
+
+    print("\nАтрибуты файлов:")
+    print(f"Скрытых: {attributes['hidden']}")
+    print(f"Системных: {attributes['system']}")
+    print(f"Только для чтения: {attributes['readonly']}")
+
+
+
+

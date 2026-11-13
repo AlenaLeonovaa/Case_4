@@ -1,5 +1,6 @@
+
 import os
-from typing import Tuple
+from typing import Tuple, Dict
 
 import navigation
 import utils
@@ -31,6 +32,9 @@ def count_files(path: str) -> Tuple[bool, int]:
             if os.path.islink(full_path):
                 continue
 
+            if hasattr(os.path, "isjunction") and os.path.isjunction(full_path):
+                continue
+
             attrs = utils.get_windows_attributes(full_path)
 
             if attrs == utils.INVALID_FILE_ATTRIBUTES:
@@ -53,7 +57,6 @@ def count_files(path: str) -> Tuple[bool, int]:
         return True, count
 
     return count_recursive(path)
-
 
 
 def count_bytes(path: str) -> Tuple[bool, int]:
@@ -82,6 +85,9 @@ def count_bytes(path: str) -> Tuple[bool, int]:
             if os.path.islink(full_path):
                 continue
 
+            if hasattr(os.path, "isjunction") and os.path.isjunction(full_path):
+                continue
+
             attrs = utils.get_windows_attributes(full_path)
 
             if attrs == utils.INVALID_FILE_ATTRIBUTES:
@@ -104,7 +110,6 @@ def count_bytes(path: str) -> Tuple[bool, int]:
         return True, total_size
 
     return count_recursive(path)
-
 
 
 def analyze_windows_file_types(path: str) -> Tuple[bool, Dict[str, Dict[str, int]]]:
@@ -131,6 +136,9 @@ def analyze_windows_file_types(path: str) -> Tuple[bool, Dict[str, Dict[str, int
             full_path = os.path.join(current_path, item["name"])
 
             if os.path.islink(full_path):
+                continue
+
+            if hasattr(os.path, "isjunction") and os.path.isjunction(full_path):
                 continue
 
             attrs = utils.get_windows_attributes(full_path)
@@ -177,17 +185,23 @@ def analyze_windows_file_types(path: str) -> Tuple[bool, Dict[str, Dict[str, int
     return analyze_recursive(path)
 
 
-
 def get_windows_file_attributes_stats(path: str) -> Tuple[bool, Dict[str, int]]:
-    """Подсчёт файлов с атрибутами Windows."""
+    """Рекурсивный подсчёт файлов с атрибутами Windows."""
 
     visited = set()
+
+    def empty_stats():
+        return {
+            "hidden": 0,
+            "system": 0,
+            "readonly": 0
+        }
 
     def analyze_recursive(current_path):
         real_path = os.path.normcase(os.path.realpath(current_path))
 
         if real_path in visited:
-            return True, {}
+            return True, empty_stats()
 
         visited.add(real_path)
 
@@ -196,16 +210,15 @@ def get_windows_file_attributes_stats(path: str) -> Tuple[bool, Dict[str, int]]:
         if not success:
             return False, {}
 
-        stats = {
-            "hidden": 0,
-            "system": 0,
-            "readonly": 0
-        }
+        stats = empty_stats()
 
         for item in items:
             full_path = os.path.join(current_path, item["name"])
 
             if os.path.islink(full_path):
+                continue
+
+            if hasattr(os.path, "isjunction") and os.path.isjunction(full_path):
                 continue
 
             attrs = utils.get_windows_attributes(full_path)
@@ -237,7 +250,6 @@ def get_windows_file_attributes_stats(path: str) -> Tuple[bool, Dict[str, int]]:
     return analyze_recursive(path)
 
 
-
 def show_windows_directory_stats(path: str) -> None:
     """Вывод общей статистики каталога Windows."""
 
@@ -258,7 +270,7 @@ def show_windows_directory_stats(path: str) -> None:
         print("Ошибка: не удалось получить статистику каталога.")
         return
 
-    print("\n СТАТИСТИКА КАТАЛОГА ")
+    print("\nСТАТИСТИКА КАТАЛОГА")
     print(f"Путь: {path}")
 
     print(f"\nКоличество файлов: {files_count}")
@@ -272,7 +284,7 @@ def show_windows_directory_stats(path: str) -> None:
         for extension, data in sorted(file_types.items()):
             print(
                 f"{extension}: "
-                f"{data['count']} файлов, "
+                f"{data['count']} шт., "
                 f"{utils.format_size(data['size'])}"
             )
 
@@ -280,7 +292,4 @@ def show_windows_directory_stats(path: str) -> None:
     print(f"Скрытых: {attributes['hidden']}")
     print(f"Системных: {attributes['system']}")
     print(f"Только для чтения: {attributes['readonly']}")
-
-
-
 

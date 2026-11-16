@@ -1,11 +1,3 @@
-"""Basic Windows filesystem utilities for the File Archaeologist project.
-
-This module provides low-level helpers for working with Windows paths,
-file attributes and directory listing. It has no dependencies on other
-project modules and is intended to be imported by navigation, analysis
-and search modules.
-"""
-
 from __future__ import annotations
 
 import os
@@ -35,12 +27,10 @@ INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
 
 
 def is_windows_os():
-    """Return True if running on Windows."""
     return platform.system() == "Windows"
 
 
 def get_windows_attributes(path):
-    """Return raw Windows attribute flags for path."""
     try:
         return os.stat(path).st_file_attributes
     except (OSError, AttributeError):
@@ -59,7 +49,6 @@ def get_windows_attributes(path):
 
 
 def validate_segment(segment):
-    """Return error message for an invalid segment, or None if valid."""
     for ch in segment:
         if ch in FORBIDDEN_CHARS:
             return f"forbidden character {ch!r} in segment {segment!r}"
@@ -69,7 +58,6 @@ def validate_segment(segment):
 
 
 def validate_windows_path(path):
-    """Validate a Windows path syntactically; return (ok, reason)."""
     if not isinstance(path, (str, Path)):
         return False, f"path must be str or Path, got {type(path).__name__}"
 
@@ -104,7 +92,6 @@ def validate_windows_path(path):
 
 
 def format_size(size_bytes):
-    """Format a byte count as a human-readable Windows-style string."""
     if size_bytes < 0:
         return "0 B"
     if size_bytes < 1024:
@@ -119,7 +106,6 @@ def format_size(size_bytes):
 
 
 def get_parent_path(path):
-    """Return the parent directory of a Windows path."""
     raw = str(path)
     if not raw:
         return "."
@@ -133,7 +119,6 @@ def get_parent_path(path):
 
 
 def safe_windows_listdir(path):
-    """Return directory entries, or [] on any error."""
     try:
         return os.listdir(path)
     except (PermissionError, FileNotFoundError, OSError):
@@ -141,7 +126,6 @@ def safe_windows_listdir(path):
 
 
 def is_hidden_windows_file(path):
-    """Return True if path has the FILE_ATTRIBUTE_HIDDEN flag."""
     attrs = get_windows_attributes(path)
     if attrs == INVALID_FILE_ATTRIBUTES:
         return False
